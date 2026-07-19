@@ -46,7 +46,7 @@ Merkregel: vorwärts MAXIMUM, rückwärts MINIMUM. Kritischer Pfad: durchgehende
 
 ## Versionen
 
-Aktuelle Version: **1.1.0**. Details siehe [CHANGELOG.md](CHANGELOG.md). Releases werden als Git-Tags geführt, versionierte Einzeldateien liegen bei den GitHub Releases.
+Aktuelle Version: **1.1.1**. Details siehe [CHANGELOG.md](CHANGELOG.md). Releases werden als Git-Tags geführt, versionierte Einzeldateien liegen bei den GitHub Releases.
 
 ## Lizenz
 

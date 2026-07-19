@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.1 (2026-07-19)
+
+- Gold-Markierung: doppelte Rahmenfärbung im Knoteninneren entfernt, nur noch durchgehendes Overlay und goldener Buchstabe
+
 ## v1.1.0 (2026-07-19)
 
 - Kritischer Pfad wird nach vollständiger Lösung in Gold hervorgehoben (Knoten und Pfeile)
