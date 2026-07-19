@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0 (2026-07-19)
+## v1.0.0 (2026-07-19)
 
 Erste stabile Version. Von beiden Testern im Multiplayer abgenommen.
 

@@ -1,5 +1,5 @@
 <!--
-  PUFFERZONE v1.0 - Netzplan-Trainer (CPM / Vorgangsknotennetz)
+  PUFFERZONE v1.0.0 - Netzplan-Trainer (Vorgangsknotennetz)
   Copyright (c) 2026 lokthok
   Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
   https://github.com/lokthok/pufferzone
@@ -41,6 +41,9 @@ header{position:relative;display:grid;grid-template-columns:324px 1fr auto;gap:8
 header h1{display:flex;align-items:center;font:700 16px var(--mono);
   letter-spacing:.22em;margin:0 10px 0 0;
   color:var(--accent);text-shadow:0 0 14px rgba(111,220,247,.5)}
+header h1 .markwrap{display:inline-flex;flex-direction:column;align-items:center;gap:1px}
+header h1 .ver{font:600 9.5px var(--mono);letter-spacing:.3em;color:var(--accent);
+  text-shadow:0 0 8px rgba(111,220,247,.45)}
 header h1 .subwrap{display:inline-flex;flex-direction:column;gap:2px;
   margin:0 auto;align-items:center;text-align:center}
 header h1 .sub{font:400 10.5px var(--mono);letter-spacing:.14em;color:var(--muted);
@@ -198,7 +201,7 @@ th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
 </head>
 <body>
 <header>
-  <h1>PUFFERZONE<span class="subwrap"><span class="sub">Netzplan-Trainer</span><a class="cred" href="https://github.com/lokthok/pufferzone" target="_blank" rel="noopener">© lokthok</a></span></h1>
+  <h1><span class="markwrap">PUFFERZONE<span class="ver" id="appVer"></span></span><span class="subwrap"><span class="sub">Netzplan-Trainer</span><a class="cred" href="https://github.com/lokthok/pufferzone" target="_blank" rel="noopener">© lokthok</a></span></h1>
   <div id="hdrLeft">
   <select id="difficulty">
     <option value="6">Leicht (6)</option>
@@ -286,6 +289,8 @@ th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
 </main>
 <script>
 "use strict";
+const APP_VERSION="1.0.0";
+document.getElementById("appVer").textContent="v"+APP_VERSION;
 const NAMES="ABCDEFGHIJKL";
 const DIFF={L:6,M:8,S:10};
 const CODECHARS="23456789ABCDEFGHJKMNPQRSTUVWXYZ";
