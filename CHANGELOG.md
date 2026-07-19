@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.0 (2026-07-19)
+
+- Kritischer Pfad wird nach vollständiger Lösung in Gold hervorgehoben (Knoten und Pfeile)
+- Pfeilrouting: Knick in festem Abstand hinter dem Quellknoten, mehrere Ausgänge fächern in 20px-Schritten auf; Andockpunkte aufs Raster synchronisiert
+- Highscore: stabile Sortierung (Fertige nach Zeit, Laufende alphabetisch), zweizeilige Einträge
+- Multiplayer: Match-Ende-Meldung und alle Auswertungsausgaben zeilenweise
+- Screenshot in der Dokumentation
+
 ## v1.0.0 (2026-07-19)
 
 Erste stabile Version. Von beiden Testern im Multiplayer abgenommen.

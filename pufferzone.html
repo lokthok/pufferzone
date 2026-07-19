@@ -1,5 +1,5 @@
 <!--
-  PUFFERZONE v1.0.0 - Netzplan-Trainer (Vorgangsknotennetz)
+  PUFFERZONE v1.1.0 - Netzplan-Trainer (Vorgangsknotennetz)
   Copyright (c) 2026 lokthok
   Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
   https://github.com/lokthok/pufferzone
@@ -17,6 +17,7 @@
   --line:rgba(200,226,240,.55); --line-strong:rgba(200,226,240,.55);
   --accent:#6fdcf7; --accent-dim:#3ba4c2; --accent-soft:rgba(111,220,247,.09);
   --orange:#ff9028; --orange-soft:rgba(255,144,40,.12);
+  --gold:#ffd056;
   --mono:ui-monospace,"SF Mono",Consolas,monospace;
   --ctrl-h:34px;
 }
@@ -151,6 +152,11 @@ th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
 .node input.miss{border:1px dashed var(--orange)!important;background:var(--orange-soft)}
 .node.start .box{border-left:2px solid var(--accent);
   box-shadow:-4px 0 7px -4px rgba(111,220,247,.28),0 0 14px rgba(0,0,0,.5)}
+.node.crit .box{border-color:var(--gold)}
+.node.crit .box::after{content:"";position:absolute;inset:-1px;
+  border:1px solid var(--gold);box-shadow:0 0 12px rgba(255,208,86,.28);
+  pointer-events:none;z-index:3}
+.node.crit .nname{color:var(--gold)}
 .node.connectSrc .box{border-color:var(--orange);
   box-shadow:0 0 0 1px rgba(255,144,40,.5),0 0 16px rgba(255,144,40,.3)}
 /* ---- Overlays auf der Arbeitsfläche ---- */
@@ -188,7 +194,7 @@ th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
   white-space:nowrap;color:var(--accent)}
 #players .pw{color:var(--orange);flex:none}
 #players .pd{text-align:right}
-#mpStatus{font:12px var(--mono);color:var(--muted);margin-top:6px;min-height:16px}
+#mpStatus{font:12px var(--mono);color:var(--muted);margin-top:6px;min-height:16px;white-space:pre-line}
 @media (max-width:900px){
   body{display:block;height:auto}
   header{display:flex;flex-wrap:wrap}
@@ -252,7 +258,11 @@ th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
         <defs><marker id="arr" viewBox="0 0 14 14" refX="12" refY="7"
           markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse"
           orient="auto-start-reverse">
-          <path d="M2 2L12 7L2 12z" fill="#7fd7ef"/></marker></defs>
+          <path d="M2 2L12 7L2 12z" fill="#7fd7ef"/></marker>
+        <marker id="arrGold" viewBox="0 0 14 14" refX="12" refY="7"
+          markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse"
+          orient="auto-start-reverse">
+          <path d="M2 2L12 7L2 12z" fill="#ffd056"/></marker></defs>
         <g id="edgeLayer"></g>
         <path id="tempLine" d="" fill="none" stroke="#ff9028"
           stroke-width="1.5" stroke-dasharray="6 4" visibility="hidden"/>
@@ -289,7 +299,7 @@ th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
 </main>
 <script>
 "use strict";
-const APP_VERSION="1.0.0";
+const APP_VERSION="1.1.0";
 document.getElementById("appVer").textContent="v"+APP_VERSION;
 const NAMES="ABCDEFGHIJKL";
 const DIFF={L:6,M:8,S:10};
@@ -297,6 +307,19 @@ const CODECHARS="23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 let task=null, curCode=null;
 let placed=new Map(), userEdges=new Set(), connectFrom=null;
 let stats=null, tickHandle=null;
+let critOn=false, critEdges=new Set();
+function markCritical(){
+  if(!task)return;
+  critOn=true;critEdges.clear();
+  const critNodes=new Set();
+  task.kritPaths.forEach(p=>{
+    const ids=p.split("-");
+    ids.forEach(id=>critNodes.add(id));
+    for(let i=0;i<ids.length-1;i++)critEdges.add(ids[i]+">"+ids[i+1]);
+  });
+  critNodes.forEach(id=>placed.get(id)?.el.classList.add("crit"));
+  drawEdges();
+}
 
 /* ---------- Seed-PRNG ---------- */
 function xmur3(str){let h=1779033703^str.length;
@@ -405,6 +428,7 @@ function loadTask(code,broadcast){
   const t=genTask(n);
   if(!t){alert("Aus diesem Code ließ sich keine Aufgabe erzeugen, bitte anderen Code nehmen.");return false;}
   task=t;curCode=code;
+  critOn=false;critEdges.clear();
   placed.clear();userEdges.clear();connectFrom=null;
   canvas.querySelectorAll(".node").forEach(e=>e.remove());
   edgeLayer.innerHTML="";
@@ -595,14 +619,15 @@ canvas.addEventListener("click",ev=>{
 });
 
 /* ---------- Orthogonale Kanten: raus rechts, rein links ---------- */
-function routePath(sx,sy,tx,ty){
-  if(tx-sx>=36){
-    const mx=Math.round((sx+tx)/2);
-    return "M"+sx+" "+sy+" L"+mx+" "+sy+" L"+mx+" "+ty+" L"+tx+" "+ty;
+function routePath(sx,sy,tx,ty,off){
+  off=off||18;
+  if(tx-sx>=off+16){
+    const bx=sx+off;
+    return "M"+sx+" "+sy+" L"+bx+" "+sy+" L"+bx+" "+ty+" L"+tx+" "+ty;
   }
-  const o=20,my=Math.round((sy+ty)/2);
-  return "M"+sx+" "+sy+" L"+(sx+o)+" "+sy+" L"+(sx+o)+" "+my+
-         " L"+(tx-o)+" "+my+" L"+(tx-o)+" "+ty+" L"+tx+" "+ty;
+  const my=Math.round((sy+ty)/2);
+  return "M"+sx+" "+sy+" L"+(sx+off)+" "+sy+" L"+(sx+off)+" "+my+
+         " L"+(tx-20)+" "+my+" L"+(tx-20)+" "+ty+" L"+tx+" "+ty;
 }
 function drawEdges(){
   edgeLayer.innerHTML="";
@@ -622,7 +647,8 @@ function drawEdges(){
       return y1-y2;
     });
     const i=list.indexOf(key),n=list.length;
-    return p.y+h/2+(i-(n-1)/2)*16;
+    const raw=p.y+h/2+(i-(n-1)/2)*20;
+    return Math.round(raw/20)*20;
   };
   userEdges.forEach(key=>{
     const[a,b]=key.split(">");
@@ -630,10 +656,13 @@ function drawEdges(){
     const pa=placed.get(a),pb=placed.get(b);
     const sx=pa.x+pa.el.offsetWidth,sy=Math.round(portY(a,outs[a],key));
     const tx=pb.x,ty=Math.round(portY(b,ins[b],key));
-    const d=routePath(sx,sy,tx,ty);
+    const off=20*(outs[a].indexOf(key)+1);
+    const d=routePath(sx,sy,tx,ty,off);
+    const hot=critOn&&critEdges.has(key);
     const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-    g.innerHTML='<path d="'+d+'" fill="none" stroke="#7fd7ef" stroke-width="1.4" '+
-      'marker-end="url(#arr)"/>'+
+    g.innerHTML='<path d="'+d+'" fill="none" stroke="'+(hot?"#ffd056":"#7fd7ef")+
+      '" stroke-width="'+(hot?"1.8":"1.4")+'" '+
+      'marker-end="url(#'+(hot?"arrGold":"arr")+')"/>'+
       '<path class="hit" d="'+d+'" fill="none" stroke="transparent" stroke-width="14">'+
       '<title>'+a+' → '+b+' (Klick löscht)</title></path>';
     g.querySelector(".hit").addEventListener("click",()=>{userEdges.delete(key);drawEdges();});
@@ -699,6 +728,7 @@ $("#btnCheck").addEventListener("click",()=>{
       lines.push('<span class="good">Zeit: '+fmtTime(ms)+'</span>');
       lines.push('<span class="good">Prüfvorgänge: '+stats.checks+'</span>');
       lines.push('<span class="good">Fehler gesamt: '+stats.errors+'</span>');
+      markCritical();
       saveHistEntry({code:stats.code,ms,checks:stats.checks,errors:stats.errors,
         date:new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})+
         " "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})});
@@ -735,8 +765,10 @@ $("#btnSolve").addEventListener("click",()=>{
   });
   $("#inDauer").value=task.dauer;
   $("#inPfad").value=task.kritPaths[0].replace(/-/g,"");
-  $("#report").innerHTML="Lösung eingetragen. Projektdauer "+task.dauer+
-    " Tage, kritische(r) Pfad(e): "+task.kritPaths.join("  |  ");
+  markCritical();
+  $("#report").innerHTML="Lösung eingetragen.\n"+
+    "Projektdauer: "+task.dauer+" Tage\n"+
+    "Kritische(r) Pfad(e):\n"+task.kritPaths.join("\n");
   const rp=$("#reportPanel");
   rp.classList.remove("state-bad","state-good");
   rp.hidden=false;
@@ -766,7 +798,12 @@ function renderPlayers(){
   if(!mp.room){$("#players").innerHTML="";return;}
   const rows=[Object.assign(selfProg(),{self:true})];
   Object.values(mp.peers).forEach(p=>rows.push(p));
-  rows.sort((a,b)=>(b.done?1:0)-(a.done?1:0)||(a.ms??0)-(b.ms??0));
+  rows.sort((a,b)=>{
+    const d=(b.done?1:0)-(a.done?1:0);
+    if(d)return d;
+    if(a.done&&b.done&&a.ms!==b.ms)return a.ms-b.ms;
+    return String(a.name||"").localeCompare(String(b.name||""),"de");
+  });
   $("#players").innerHTML=rows.map(p=>{
     const w=mp.score.wins[p.name]||0;
     return '<li'+(p.self?' class="self"':'')+'>'+
@@ -785,8 +822,8 @@ function checkMatchEnd(){
   mp.score.matches++;
   const win=all.reduce((a,b)=>(a.ms<=b.ms?a:b));
   mp.score.wins[win.name]=(mp.score.wins[win.name]||0)+1;
-  $("#mpStatus").innerHTML='<span class="good">MATCH BEENDET · Sieger: '+esc(win.name)+
-    " ("+fmtTime(win.ms)+") · Match "+mp.score.matches+"</span>";
+  $("#mpStatus").innerHTML='<span class="good">MATCH BEENDET\nSieger: '+esc(win.name)+
+    " ("+fmtTime(win.ms)+")\nMatch "+mp.score.matches+"</span>";
   renderPlayers();
 }
 function setRoomStatus(){

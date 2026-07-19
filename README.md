@@ -4,6 +4,10 @@
 
 Eine einzelne HTML-Datei. Kein Build, kein Server, keine Installation. Öffnen, üben, fertig.
 
+<a href="docs/screenshot.png"><img src="docs/screenshot.png" alt="PUFFERZONE: gelöste Aufgabe mit goldenem kritischen Pfad" width="850"></a>
+
+*Klick auf das Bild öffnet die volle Auflösung.*
+
 PUFFERZONE generiert Netzplan-Aufgaben (Vorgangsknotennetze mit Vorwärts- und Rückwärtsrechnung, Puffern und kritischem Pfad), die du direkt im Browser löst: Knoten platzieren, Verbindungen ziehen, Werte eintragen, prüfen lassen. Netzplantechnik ist Stoff der AP1, und die ist berufsübergreifend identisch: Fachinformatiker aller Fachrichtungen (Anwendungsentwicklung, Systemintegration, Daten- und Prozessanalyse, Digitale Vernetzung) ebenso wie Kaufleute für IT-System-Management und Digitalisierungsmanagement schreiben dieselbe Prüfung. Die Knoten entsprechen dem in der IHK-Prüfung üblichen Format (FAZ/FEZ oben, Nr und Bezeichnung, Dauer/GP/FP, SAZ/SEZ unten).
 
 ## Features
@@ -42,7 +46,7 @@ Merkregel: vorwärts MAXIMUM, rückwärts MINIMUM. Kritischer Pfad: durchgehende
 
 ## Versionen
 
-Aktuelle Version: **1.0.0**. Details siehe [CHANGELOG.md](CHANGELOG.md). Releases werden als Git-Tags geführt, versionierte Einzeldateien liegen bei den GitHub Releases.
+Aktuelle Version: **1.1.0**. Details siehe [CHANGELOG.md](CHANGELOG.md). Releases werden als Git-Tags geführt, versionierte Einzeldateien liegen bei den GitHub Releases.
 
 ## Lizenz
 
