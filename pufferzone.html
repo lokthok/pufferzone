@@ -1,0 +1,850 @@
+<!--
+  PUFFERZONE v1.0 - Netzplan-Trainer (CPM / Vorgangsknotennetz)
+  Copyright (c) 2026 lokthok
+  Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+  https://github.com/lokthok/pufferzone
+-->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PUFFERZONE · Netzplan-Trainer</title>
+<style>
+:root{
+  --bg0:#0f1113; --bg1:#151719; --glass:rgba(24,27,31,.72);
+  --ink:#dfe7ec; --muted:#8b959c;
+  --line:rgba(200,226,240,.55); --line-strong:rgba(200,226,240,.55);
+  --accent:#6fdcf7; --accent-dim:#3ba4c2; --accent-soft:rgba(111,220,247,.09);
+  --orange:#ff9028; --orange-soft:rgba(255,144,40,.12);
+  --mono:ui-monospace,"SF Mono",Consolas,monospace;
+  --ctrl-h:34px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;color:var(--ink);
+  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  display:flex;flex-direction:column;
+  background:var(--bg0);
+  background-image:
+    radial-gradient(1100px 500px at 18% -10%,rgba(111,220,247,.05),transparent 60%),
+    linear-gradient(rgba(200,226,240,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(200,226,240,.03) 1px,transparent 1px);
+  background-size:auto,56px 56px,56px 56px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(200,226,240,.22)}
+::-webkit-scrollbar-track{background:transparent}
+header{position:relative;display:grid;grid-template-columns:324px 1fr auto;gap:8px;
+  align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);
+  background:rgba(15,17,19,.85);backdrop-filter:blur(8px)}
+#hdrLeft{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header h1{display:flex;align-items:center;font:700 16px var(--mono);
+  letter-spacing:.22em;margin:0 10px 0 0;
+  color:var(--accent);text-shadow:0 0 14px rgba(111,220,247,.5)}
+header h1 .subwrap{display:inline-flex;flex-direction:column;gap:2px;
+  margin:0 auto;align-items:center;text-align:center}
+header h1 .sub{font:400 10.5px var(--mono);letter-spacing:.14em;color:var(--muted);
+  text-shadow:none}
+header h1 .cred{font:400 10px var(--mono);letter-spacing:.1em;color:var(--muted);
+  text-decoration:none;text-shadow:none}
+header h1 .cred:hover{color:var(--accent)}
+select,button,input[type=text]{font:13.5px var(--mono);letter-spacing:.03em;
+  height:var(--ctrl-h);padding:0 12px;border:1px solid var(--line);
+  background:rgba(18,21,24,.7);color:var(--ink);border-radius:0}
+button{position:relative}
+select:focus,input:focus{outline:none;border-color:var(--accent-dim);
+  box-shadow:0 0 0 1px rgba(111,220,247,.25),0 0 12px rgba(111,220,247,.12)}
+button{cursor:pointer;transition:border-color .12s,box-shadow .12s,color .12s,background .12s}
+button:hover{border-color:var(--accent);color:var(--accent);
+  background-color:rgba(111,220,247,.09);
+  box-shadow:0 0 12px rgba(111,220,247,.25),inset 0 0 8px rgba(111,220,247,.06)}
+button:disabled{opacity:.35;cursor:default;box-shadow:none}
+#seedIn{width:86px;text-transform:uppercase;margin-left:50px}
+#curCode{display:none;position:relative;align-items:center;height:var(--ctrl-h);padding:0 12px;
+  font:700 13.5px var(--mono);color:var(--accent);letter-spacing:.08em;
+  background:var(--accent-soft);border:1px solid var(--line);cursor:pointer}
+#curCode .lbl{color:var(--muted);font-weight:400;margin-right:7px;letter-spacing:.14em}
+#mpGroup{display:flex;gap:8px;align-items:center;justify-self:end}
+#mpName{width:108px}#mpRoom{width:118px}
+#boardActions{position:absolute;top:10px;left:calc(50vw + 167px);
+  transform:translateX(-50%);display:flex;gap:8px;z-index:3}
+@media (max-width:1480px){
+  #boardActions{position:static;transform:none;justify-self:end}
+  header{grid-template-columns:324px 1fr auto auto}
+}
+#boardPanel>h2{position:relative}
+#timer{position:absolute;left:50%;top:0;transform:translateX(-50%);
+  font:600 12.5px var(--mono);letter-spacing:.24em;color:var(--accent);
+  text-shadow:0 0 10px rgba(111,220,247,.4)}
+main{flex:1;min-height:0;display:flex;gap:14px;padding:14px}
+#side{width:320px;min-width:264px;overflow:auto;flex-shrink:0}
+#boardPanel{flex:1;min-width:0;display:flex;flex-direction:column;margin-bottom:0;
+  position:relative;backdrop-filter:none}
+.panel{position:relative;background:var(--glass);backdrop-filter:blur(9px);
+  border:1px solid var(--line);padding:13px 15px;margin-bottom:14px}
+.panel h2{font:600 11.5px var(--mono);margin:0 0 9px;color:var(--accent-dim);
+  text-transform:uppercase;letter-spacing:.24em}
+.panel h2::before{content:"// ";color:var(--muted)}
+.panel.state-bad{border-color:var(--orange);
+  box-shadow:0 0 0 1px rgba(255,144,40,.35),0 0 18px rgba(255,144,40,.18)}
+.panel.state-bad h2{color:var(--orange)}
+.panel.state-good{border-color:var(--accent-dim);
+  box-shadow:0 0 0 1px rgba(111,220,247,.3),0 0 18px rgba(111,220,247,.15)}
+table{border-collapse:collapse;font-family:var(--mono);font-size:13px;width:100%}
+th,td{border:1px solid var(--line);padding:3px 8px;text-align:center}
+th{background:var(--accent-soft);font-weight:600;color:var(--accent-dim)}
+#palette{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.chip{position:relative;font:13px var(--mono);padding:5px 11px;border:1px dashed var(--accent-dim);
+  background:var(--accent-soft);color:var(--accent);cursor:pointer;user-select:none}
+.chip:hover{background-color:var(--accent);color:#082027;box-shadow:0 0 12px rgba(111,220,247,.35)}
+#canvasWrap{flex:1;min-height:0;overflow:auto;border:1px solid var(--line);background:var(--bg1)}
+#canvas{position:relative;width:100%;height:100%;min-width:1100px;min-height:1000px;
+  background-image:linear-gradient(rgba(200,226,240,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(200,226,240,.05) 1px,transparent 1px);
+  background-size:20px 20px;background-position:-1px -1px}
+#wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#wires .hit{pointer-events:stroke;cursor:pointer}
+/* ---- IHK-Vorgangsknoten ---- */
+.node{position:absolute;width:200px;user-select:none;font-family:var(--mono)}
+.node .fld{position:absolute;width:67px;height:33px;font:14px var(--mono);
+  padding:0;text-align:center;border:1px solid var(--line-strong);
+  background:transparent;color:var(--ink);z-index:2}
+.node .faz{top:0;left:0}
+.node .fez{top:0;right:0}
+.node .saz{bottom:0;left:0}
+.node .sez{bottom:0;right:0}
+.node .box{border:1px solid var(--line-strong);background:rgba(18,22,26,.94);
+  margin:32px 0;box-shadow:0 0 14px rgba(0,0,0,.5)}
+.node.removing .box{border-color:var(--orange);border-style:dashed;
+  box-shadow:0 0 14px rgba(255,144,40,.35)}
+.node .r2{display:flex;align-items:center;gap:5px;padding:0;height:66px;cursor:grab;
+  border-bottom:1px solid var(--line)}
+.node .nr{margin-left:15px}
+.node .nport{margin-right:15px}
+.node .r2:active{cursor:grabbing}
+.node .nr{width:36px;height:36px;flex:none;font:13px var(--mono);padding:2px 3px;
+  text-align:center;border:1px solid var(--line);background:rgba(15,17,19,.6);
+  color:var(--accent)}
+.node .nname{font-weight:700;font-size:14.5px;color:var(--ink);flex:1;text-align:center}
+.node .nport{display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;flex:none;border:1px solid var(--accent-dim);
+  color:var(--accent);padding:0;cursor:crosshair}
+.node .nport:hover{background:var(--accent);color:#082027;
+  box-shadow:0 0 10px rgba(111,220,247,.4)}
+.node .r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;grid-auto-rows:66px}
+.node .r3>*{padding:0;text-align:center;font-size:14px}
+.node .r3 .ndur{color:var(--muted);border-right:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center}
+.node .r3 input{font:13px var(--mono);border:none;border-right:1px solid var(--line);
+  background:transparent;color:var(--ink);width:100%;height:100%}
+.node .r3 input:last-child{border-right:none}
+.node input:focus{outline:none;border-color:var(--accent-dim);
+  box-shadow:0 0 6px rgba(111,220,247,.3)}
+.node input::placeholder{color:rgba(139,149,156,.55);font-size:10.5px;letter-spacing:.06em}
+.node input.ok{border-color:var(--accent-dim)!important;background:var(--accent-soft);
+  color:var(--accent)}
+.node input.err{border-color:var(--orange)!important;background:var(--orange-soft);
+  color:var(--orange);box-shadow:0 0 6px rgba(255,144,40,.3)}
+.node input.miss{border:1px dashed var(--orange)!important;background:var(--orange-soft)}
+.node.start .box{border-left:2px solid var(--accent);
+  box-shadow:-4px 0 7px -4px rgba(111,220,247,.28),0 0 14px rgba(0,0,0,.5)}
+.node.connectSrc .box{border-color:var(--orange);
+  box-shadow:0 0 0 1px rgba(255,144,40,.5),0 0 16px rgba(255,144,40,.3)}
+/* ---- Overlays auf der Arbeitsfläche ---- */
+.overlay{position:absolute;z-index:6;background:var(--glass);backdrop-filter:blur(10px);
+  border:1px solid var(--line);padding:11px 13px}
+.overlay h3{font:600 10.5px var(--mono);margin:0 0 8px;color:var(--accent-dim);
+  text-transform:uppercase;letter-spacing:.22em}
+.overlay h3::before{content:"// ";color:var(--muted)}
+#pinnedValues{top:13px;right:40px;width:228px}
+#pinnedValues label{display:block;font:12px var(--mono);color:var(--muted);margin-bottom:7px}
+#pinnedValues input{display:block;width:100%;margin-top:3px;height:28px;font-size:13px}
+#pinnedValues input.ok{border-color:var(--accent-dim);background:var(--accent-soft);color:var(--accent)}
+#pinnedValues input.err{border-color:var(--orange);background:var(--orange-soft);color:var(--orange)}
+#pinnedValues input.miss{border-style:dashed;border-color:var(--orange);background:var(--orange-soft)}
+#cheatBtn{position:absolute;bottom:29px;right:31px;z-index:7}
+#cheatPanel{bottom:73px;right:31px;width:322px;display:none;font:12.5px var(--mono);
+  line-height:1.7}
+#cheatPanel b{color:var(--accent)}
+#cheatPanel .sec{color:var(--muted);margin:8px 0 2px;letter-spacing:.14em;font-size:10.5px}
+#report,#statLine{white-space:pre-wrap;font:13px var(--mono)}
+.good{color:var(--accent);text-shadow:0 0 8px rgba(111,220,247,.3)}
+.bad{color:var(--orange);text-shadow:0 0 8px rgba(255,144,40,.3)}
+#histList{list-style:none;margin:0;padding:0;font:12.5px var(--mono)}
+#histList li{display:flex;gap:8px;padding:5px 6px;border-bottom:1px solid var(--line);
+  cursor:pointer;align-items:baseline}
+#histList li:hover{background:var(--accent-soft)}
+#histList .hc{color:var(--accent);font-weight:700;min-width:52px}
+#histList .hm{color:var(--muted);margin-left:auto;font-size:11px}
+#players{list-style:none;margin:6px 0 0;padding:0;font:12.5px var(--mono)}
+#players li{display:block;padding:5px 4px;border-bottom:1px solid var(--line)}
+#players li.self{background:var(--accent-soft)}
+#players .prow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#players .prow+.prow{margin-top:2px}
+#players .pn{font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:var(--accent)}
+#players .pw{color:var(--orange);flex:none}
+#players .pd{text-align:right}
+#mpStatus{font:12px var(--mono);color:var(--muted);margin-top:6px;min-height:16px}
+@media (max-width:900px){
+  body{display:block;height:auto}
+  header{display:flex;flex-wrap:wrap}
+  main{flex-direction:column;padding:10px}
+  #side{width:auto;min-width:0;overflow:visible}
+  #canvasWrap{height:72vh}
+  #mpGroup{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>PUFFERZONE<span class="subwrap"><span class="sub">Netzplan-Trainer</span><a class="cred" href="https://github.com/lokthok/pufferzone" target="_blank" rel="noopener">© lokthok</a></span></h1>
+  <div id="hdrLeft">
+  <select id="difficulty">
+    <option value="6">Leicht (6)</option>
+    <option value="8" selected>Mittel (8)</option>
+    <option value="10">Schwer (10)</option>
+  </select>
+  <button id="btnNew">Neue Aufgabe</button>
+  <input type="text" id="seedIn" placeholder="SEED" maxlength="5" title="Aufgaben-Code eingeben">
+  <button id="btnLoad">Laden</button>
+  <span id="curCode" title="Klick kopiert den Code"><span class="lbl">SEED</span><span id="curCodeVal"></span></span>
+  </div>
+  <div id="boardActions">
+    <button id="btnCheck" disabled>Prüfen</button>
+    <button id="btnSolve" disabled>Lösung</button>
+  </div>
+  <span id="mpGroup">
+    <input type="text" id="mpName" maxlength="16" placeholder="NAME">
+    <input type="text" id="mpRoom" maxlength="24" placeholder="RAUM">
+    <button id="btnRoom">Beitreten</button>
+  </span>
+</header>
+<main>
+  <div id="side">
+    <div class="panel" id="taskPanel" hidden>
+      <h2>Vorgangsliste</h2>
+      <div style="overflow:auto"><table id="taskTable"></table></div>
+      <div id="palette"></div>
+    </div>
+    <div class="panel" id="mpPanel" hidden>
+      <h2>Highscore</h2>
+      <ul id="players"></ul>
+      <div id="mpStatus"></div>
+    </div>
+    <div class="panel" id="reportPanel" hidden>
+      <h2>Auswertung</h2>
+      <div id="statLine"></div>
+      <div id="report"></div>
+    </div>
+    <div class="panel" id="histPanel" hidden>
+      <h2>Verlauf</h2>
+      <ul id="histList"></ul>
+    </div>
+  </div>
+  <div class="panel" id="boardPanel" hidden>
+    <h2>Zeichenfläche<span id="timer"></span></h2>
+    <div id="canvasWrap"><div id="canvas">
+      <svg id="wires">
+        <defs><marker id="arr" viewBox="0 0 14 14" refX="12" refY="7"
+          markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse"
+          orient="auto-start-reverse">
+          <path d="M2 2L12 7L2 12z" fill="#7fd7ef"/></marker></defs>
+        <g id="edgeLayer"></g>
+        <path id="tempLine" d="" fill="none" stroke="#ff9028"
+          stroke-width="1.5" stroke-dasharray="6 4" visibility="hidden"/>
+      </svg>
+    </div></div>
+    <div class="overlay" id="pinnedValues" hidden>
+      <h3>Projektwerte</h3>
+      <label>Projektdauer (Tage)<input id="inDauer" type="text" inputmode="numeric"></label>
+      <label>Kritischer Pfad (z. B. ADH)<input id="inPfad" type="text"></label>
+    </div>
+    <button id="cheatBtn" title="Formeln ein-/ausblenden">? Formeln</button>
+    <div class="overlay" id="cheatPanel">
+      <h3>Cheatsheet</h3>
+      <div class="sec">VORWÄRTSRECHNUNG (links → rechts)</div>
+      <b>FAZ</b> = größtes FEZ aller Vorgänger · Startknoten: 0<br>
+      <b>FEZ</b> = FAZ + Dauer<br>
+      <div class="sec">RÜCKWÄRTSRECHNUNG (rechts → links)</div>
+      <b>SEZ</b> = kleinstes SAZ aller Nachfolger · Endknoten: = Projektdauer<br>
+      <b>SAZ</b> = SEZ − Dauer<br>
+      <div class="sec">PUFFER</div>
+      <b>GP</b> = SAZ − FAZ (= SEZ − FEZ)<br>
+      <b>FP</b> = kleinstes FAZ der Nachfolger − FEZ · Endknoten: = GP<br>
+      <div class="sec">PROJEKT</div>
+      <b>Projektdauer</b> = größtes FEZ im Netz<br>
+      <b>Kritischer Pfad</b> = durchgehende Kette mit GP = 0<br>
+      <b>Merkregel</b>: vorwärts MAXIMUM, rückwärts MINIMUM<br>
+      <div class="sec">BEDIENUNG</div>
+      Knoten-Chip anklicken zum Platzieren, an der Namenszeile ziehen (rastet am Raster ein).
+      Verbinden: Pfeil-Button des Vorgängers, dann Nachfolgerknoten anklicken.
+      Klick auf eine Linie löscht sie. Knoten aus der Fläche hinausziehen und loslassen
+      entfernt ihn (zurück in die Liste). Nr-Feld ist frei beschreibbar und wird nicht geprüft.
+    </div>
+  </div>
+</main>
+<script>
+"use strict";
+const NAMES="ABCDEFGHIJKL";
+const DIFF={L:6,M:8,S:10};
+const CODECHARS="23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+let task=null, curCode=null;
+let placed=new Map(), userEdges=new Set(), connectFrom=null;
+let stats=null, tickHandle=null;
+
+/* ---------- Seed-PRNG ---------- */
+function xmur3(str){let h=1779033703^str.length;
+  for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+  return()=>{h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);
+    return(h^=h>>>16)>>>0;};}
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;
+  return((t^t>>>14)>>>0)/4294967296;};}
+let rand=Math.random;
+function rnd(a,b){return a+Math.floor(rand()*(b-a+1));}
+function makeCode(n){
+  const pre=n===6?"L":n===8?"M":"S";
+  let s=pre;
+  for(let i=0;i<4;i++)s+=CODECHARS[Math.floor(Math.random()*CODECHARS.length)];
+  return s;
+}
+
+/* ---------- Generator + Solver ---------- */
+function solve(nodes){
+  const succ={}; nodes.forEach(nd=>succ[nd.id]=[]);
+  const edges=new Set();
+  nodes.forEach(nd=>nd.preds.forEach(p=>{succ[p].push(nd.id);edges.add(p+">"+nd.id);}));
+  const vals={};
+  for(const nd of nodes){
+    const faz=nd.preds.length?Math.max(...nd.preds.map(p=>vals[p].fez)):0;
+    vals[nd.id]={faz,fez:faz+nd.dur};
+  }
+  const dauer=Math.max(...nodes.map(nd=>vals[nd.id].fez));
+  for(let i=nodes.length-1;i>=0;i--){
+    const nd=nodes[i],s=succ[nd.id];
+    const sez=s.length?Math.min(...s.map(x=>vals[x].saz)):dauer;
+    vals[nd.id].sez=sez;vals[nd.id].saz=sez-nd.dur;
+    vals[nd.id].gp=vals[nd.id].saz-vals[nd.id].faz;
+    vals[nd.id].fp=s.length?Math.min(...s.map(x=>vals[x].faz))-vals[nd.id].fez:vals[nd.id].gp;
+  }
+  const kritPaths=[];
+  const walk=(id,path)=>{
+    const nx=succ[id].filter(x=>vals[x].gp===0&&vals[x].faz===vals[id].fez);
+    if(!nx.length){kritPaths.push(path.join("-"));return;}
+    nx.forEach(x=>walk(x,[...path,x]));
+  };
+  nodes.filter(nd=>!nd.preds.length&&vals[nd.id].gp===0).forEach(nd=>walk(nd.id,[nd.id]));
+  if(!kritPaths.length)return null;
+  return{vals,dauer,edges,kritPaths};
+}
+/* Weniger Kreuzungen: Vorgänger dürfen bei Leicht max. 2, bei Mittel max. 3
+   Positionen zurückliegen. Schwer bleibt unbeschränkt. */
+function genTask(n){
+  let maxBack = n<=6 ? 2 : n<=8 ? 3 : 99;
+  if(n<=6&&rand()<0.35)maxBack=3;
+  for(let round=0;round<4;round++,maxBack++){
+    for(let attempt=0;attempt<60;attempt++){
+      const nodes=[];
+      const starts=n>=9?3:2;
+      for(let i=0;i<n;i++)nodes.push({id:NAMES[i],dur:rnd(1,8),preds:[]});
+      for(let i=starts;i<n;i++){
+        const k=(i>=n-2||rand()<0.4)?2:1;
+        const lo=Math.max(0,i-maxBack);
+        const pool=[];
+        for(let j=lo;j<i;j++)pool.push(j);
+        const chosen=new Set();
+        while(chosen.size<Math.min(k,pool.length)){
+          const w=pool.map(j=>j-lo+1);
+          const tot=w.reduce((a,b)=>a+b,0);
+          let r=rand()*tot,pick=pool[0];
+          for(let x=0;x<pool.length;x++){r-=w[x];if(r<=0){pick=pool[x];break;}}
+          chosen.add(pick);
+        }
+        nodes[i].preds=[...chosen].sort((a,b)=>a-b).map(j=>nodes[j].id);
+      }
+      const hasSucc=new Set();
+      nodes.forEach(nd=>nd.preds.forEach(p=>hasSucc.add(p)));
+      for(let i=0;i<n-1;i++){
+        if(!hasSucc.has(nodes[i].id)){
+          const hi=Math.min(i+maxBack,n-1);
+          const j=rnd(i+1,hi);
+          if(!nodes[j].preds.includes(nodes[i].id))nodes[j].preds.push(nodes[i].id);
+          hasSucc.add(nodes[i].id);
+        }
+      }
+      const sol=solve(nodes);
+      if(!sol)continue;
+      const merges=nodes.filter(nd=>nd.preds.length>=2).length;
+      const tricky=nodes.filter(nd=>sol.vals[nd.id].gp>0&&sol.vals[nd.id].fp<sol.vals[nd.id].gp).length;
+      const crit=nodes.filter(nd=>sol.vals[nd.id].gp===0).length;
+      if(merges>=2&&tricky>=1&&crit<n)
+        return{nodes,sol:sol.vals,dauer:sol.dauer,edges:sol.edges,kritPaths:sol.kritPaths};
+    }
+  }
+  return null;
+}
+
+/* ---------- Aufgabe laden ---------- */
+const $=s=>document.querySelector(s);
+const canvas=$("#canvas"),edgeLayer=$("#edgeLayer"),tempLine=$("#tempLine");
+const snap=v=>Math.round((v-10)/20)*20+10;
+const clampX=v=>Math.min(Math.floor((canvas.offsetWidth-215-10)/20)*20+10,Math.max(30,v));
+const clampY=v=>Math.min(Math.floor((canvas.offsetHeight-214-10)/20)*20+10,Math.max(30,v));
+
+function loadTask(code,broadcast){
+  code=(code||"").toUpperCase().trim();
+  const n=DIFF[code[0]];
+  if(!n||code.length!==5){alert("Ungültiger Code. Format: L/M/S plus 4 Zeichen, z. B. M7KQF");return false;}
+  rand=mulberry32(xmur3(code)());
+  const t=genTask(n);
+  if(!t){alert("Aus diesem Code ließ sich keine Aufgabe erzeugen, bitte anderen Code nehmen.");return false;}
+  task=t;curCode=code;
+  placed.clear();userEdges.clear();connectFrom=null;
+  canvas.querySelectorAll(".node").forEach(e=>e.remove());
+  edgeLayer.innerHTML="";
+  $("#inDauer").value="";$("#inPfad").value="";
+  ["#inDauer","#inPfad"].forEach(s=>$(s).classList.remove("ok","err","miss"));
+  $("#report").innerHTML="";$("#statLine").innerHTML="";
+  $("#reportPanel").hidden=true;
+  $("#reportPanel").classList.remove("state-bad","state-good");
+  renderTaskTable();renderPalette();
+  $("#taskPanel").hidden=false;$("#boardPanel").hidden=false;
+  $("#pinnedValues").hidden=false;
+  $("#btnCheck").disabled=false;$("#btnSolve").disabled=false;
+  $("#curCode").style.display="inline-flex";$("#curCodeVal").textContent=code;
+  startStats(code);
+  if(broadcast&&mp.sendCode)mp.sendCode({code,isNew:true});
+  sendMyProg();
+  return true;
+}
+$("#btnNew").addEventListener("click",()=>{
+  loadTask(makeCode(+$("#difficulty").value),true);
+});
+$("#btnLoad").addEventListener("click",()=>{
+  if($("#seedIn").value)loadTask($("#seedIn").value,true);
+});
+$("#seedIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("#btnLoad").click();});
+$("#curCode").addEventListener("click",()=>{
+  navigator.clipboard?.writeText(curCode);
+  $("#curCodeVal").textContent="kopiert!";
+  setTimeout(()=>{$("#curCodeVal").textContent=curCode;},900);
+});
+$("#cheatBtn").addEventListener("click",()=>{
+  const p=$("#cheatPanel");
+  p.style.display=p.style.display==="block"?"none":"block";
+});
+
+/* ---------- Statistik + Timer ---------- */
+function startStats(code){
+  stats={code,start:Date.now(),checks:0,errors:0,done:false};
+  clearInterval(tickHandle);
+  tickHandle=setInterval(()=>{
+    if(stats&&!stats.done)$("#timer").textContent=fmtTime(Date.now()-stats.start);
+    if(mp.room)renderPlayers();
+  },1000);
+  $("#timer").textContent="0:00";
+}
+function fmtTime(ms){
+  const s=Math.floor(ms/1000);
+  return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+}
+function loadHist(){try{return JSON.parse(localStorage.getItem("nt_hist")||"[]");}catch(e){return[];}}
+function saveHistEntry(e){
+  const h=loadHist();h.unshift(e);
+  localStorage.setItem("nt_hist",JSON.stringify(h.slice(0,15)));
+  renderHist();
+}
+function renderHist(){
+  const h=loadHist();
+  $("#histPanel").hidden=!h.length;
+  $("#histList").innerHTML=h.map(e=>
+    '<li data-code="'+e.code+'"><span class="hc">'+e.code+'</span>'+
+    '<span>'+fmtTime(e.ms)+' · '+e.errors+' F · '+e.checks+' V</span>'+
+    '<span class="hm">'+e.date+'</span></li>').join("");
+  $("#histList").querySelectorAll("li").forEach(li=>
+    li.addEventListener("click",()=>loadTask(li.dataset.code,true)));
+}
+renderHist();
+
+/* ---------- UI ---------- */
+function renderTaskTable(){
+  let h="<tr><th>Vg</th><th>Dauer</th><th>Vorgänger</th></tr>";
+  task.nodes.forEach(n=>{
+    h+="<tr><td>"+n.id+"</td><td>"+n.dur+"</td><td>"+(n.preds.join(", ")||"–")+"</td></tr>";
+  });
+  $("#taskTable").innerHTML=h;
+}
+function renderPalette(){
+  const pal=$("#palette");pal.innerHTML="";
+  task.nodes.forEach(nd=>{
+    if(placed.has(nd.id))return;
+    const c=document.createElement("span");
+    c.className="chip";c.textContent=nd.id+" ("+nd.dur+")";
+    c.addEventListener("click",()=>placeNode(nd));
+    pal.appendChild(c);
+  });
+}
+function placeNode(nd){
+  const idx=placed.size;
+  const wrap=document.getElementById("canvasWrap");
+  const perCol=Math.max(2,Math.floor((wrap.clientHeight-280)/230));
+  const col=Math.floor(idx/perCol),row=idx%perCol;
+  const x=clampX(snap(wrap.scrollLeft+wrap.clientWidth-230-col*230));
+  const y=clampY(snap(wrap.scrollTop+250+row*230));
+  const el=document.createElement("div");
+  el.className="node"+(nd.preds.length?"":" start");
+  el.dataset.id=nd.id;
+  el.style.left=x+"px";el.style.top=y+"px";
+  el.innerHTML=
+    '<input class="fld faz" data-f="faz" inputmode="numeric" placeholder="FAZ">'+
+    '<input class="fld fez" data-f="fez" inputmode="numeric" placeholder="FEZ">'+
+    '<div class="box">'+
+    '<div class="r2"><input class="nr" placeholder="Nr" maxlength="3">'+
+    '<span class="nname">'+nd.id+'</span>'+
+    '<span class="nport" title="Verbindung ziehen"><svg width="20" height="10" viewBox="0 0 20 10">'+
+    '<line x1="1" y1="5" x2="13" y2="5" stroke="currentColor" stroke-width="1.6"/>'+
+    '<path d="M12 1L19 5L12 9z" fill="currentColor"/></svg></span></div>'+
+    '<div class="r3"><span class="ndur">D '+nd.dur+'</span>'+
+    '<input data-f="gp" inputmode="numeric" placeholder="GP">'+
+    '<input data-f="fp" inputmode="numeric" placeholder="FP"></div>'+
+    '</div>'+
+    '<input class="fld saz" data-f="saz" inputmode="numeric" placeholder="SAZ">'+
+    '<input class="fld sez" data-f="sez" inputmode="numeric" placeholder="SEZ">';
+  canvas.appendChild(el);
+  placed.set(nd.id,{x,y,el});
+  el.querySelector(".nport").addEventListener("click",ev=>{
+    ev.stopPropagation();startConnect(nd.id);
+  });
+  el.addEventListener("pointerdown",ev=>{
+    if(connectFrom&&connectFrom!==nd.id){
+      ev.preventDefault();ev.stopPropagation();finishConnect(nd.id);
+    }
+  },true);
+  makeDraggable(el,nd.id);
+  renderPalette();
+}
+function removeNode(id){
+  [...userEdges].forEach(e=>{const[a,b]=e.split(">");
+    if(a===id||b===id)userEdges.delete(e);});
+  const p=placed.get(id);
+  if(p){placed.delete(id);p.el.remove();}
+  if(connectFrom===id)cancelConnect();
+  renderPalette();drawEdges();
+}
+function makeDraggable(el,id){
+  const head=el.querySelector(".r2");
+  head.addEventListener("pointerdown",ev=>{
+    if(ev.target.closest(".nport,.nr"))return;
+    ev.preventDefault();
+    const p=placed.get(id),r=canvas.getBoundingClientRect();
+    const wrap=document.getElementById("canvasWrap");
+    const ox=ev.clientX-r.left-p.x,oy=ev.clientY-r.top-p.y;
+    let outside=false;
+    const move=e=>{
+      p.x=clampX(snap(e.clientX-r.left-ox));
+      p.y=clampY(snap(e.clientY-r.top-oy));
+      el.style.left=p.x+"px";el.style.top=p.y+"px";
+      const w=wrap.getBoundingClientRect();
+      outside=e.clientX<w.left||e.clientX>w.right||e.clientY<w.top||e.clientY>w.bottom;
+      el.classList.toggle("removing",outside);
+      drawEdges();
+    };
+    const up=()=>{window.removeEventListener("pointermove",move);
+      window.removeEventListener("pointerup",up);
+      el.classList.remove("removing");
+      if(outside)removeNode(id);};
+    window.addEventListener("pointermove",move);
+    window.addEventListener("pointerup",up);
+  });
+}
+
+/* ---------- Verbinden ---------- */
+function startConnect(id){
+  if(connectFrom===id){cancelConnect();return;}
+  cancelConnect();connectFrom=id;
+  placed.get(id).el.classList.add("connectSrc");
+  tempLine.setAttribute("visibility","visible");
+  canvas.addEventListener("pointermove",trackTemp);
+}
+function trackTemp(ev){
+  const r=canvas.getBoundingClientRect();
+  const p=placed.get(connectFrom);if(!p)return;
+  const sx=p.x+p.el.offsetWidth,sy=p.y+p.el.offsetHeight/2;
+  const tx=ev.clientX-r.left,ty=ev.clientY-r.top;
+  tempLine.setAttribute("d",routePath(sx,sy,tx,ty));
+}
+function cancelConnect(){
+  if(connectFrom)placed.get(connectFrom)?.el.classList.remove("connectSrc");
+  connectFrom=null;
+  tempLine.setAttribute("visibility","hidden");
+  canvas.removeEventListener("pointermove",trackTemp);
+}
+function finishConnect(to){
+  const key=connectFrom+">"+to,back=to+">"+connectFrom;
+  if(!userEdges.has(key)&&!userEdges.has(back))userEdges.add(key);
+  cancelConnect();drawEdges();
+}
+canvas.addEventListener("click",ev=>{
+  if(connectFrom&&!ev.target.closest(".node"))cancelConnect();
+});
+
+/* ---------- Orthogonale Kanten: raus rechts, rein links ---------- */
+function routePath(sx,sy,tx,ty){
+  if(tx-sx>=36){
+    const mx=Math.round((sx+tx)/2);
+    return "M"+sx+" "+sy+" L"+mx+" "+sy+" L"+mx+" "+ty+" L"+tx+" "+ty;
+  }
+  const o=20,my=Math.round((sy+ty)/2);
+  return "M"+sx+" "+sy+" L"+(sx+o)+" "+sy+" L"+(sx+o)+" "+my+
+         " L"+(tx-o)+" "+my+" L"+(tx-o)+" "+ty+" L"+tx+" "+ty;
+}
+function drawEdges(){
+  edgeLayer.innerHTML="";
+  const outs={},ins={};
+  userEdges.forEach(key=>{
+    const[a,b]=key.split(">");
+    if(!placed.has(a)||!placed.has(b))return;
+    (outs[a]=outs[a]||[]).push(key);
+    (ins[b]=ins[b]||[]).push(key);
+  });
+  const portY=(id,list,key)=>{
+    const p=placed.get(id),h=p.el.offsetHeight;
+    list.sort((k1,k2)=>{
+      const o1=k1.split(">"),o2=k2.split(">");
+      const y1=placed.get(o1[0]===id?o1[1]:o1[0])?.y??0;
+      const y2=placed.get(o2[0]===id?o2[1]:o2[0])?.y??0;
+      return y1-y2;
+    });
+    const i=list.indexOf(key),n=list.length;
+    return p.y+h/2+(i-(n-1)/2)*16;
+  };
+  userEdges.forEach(key=>{
+    const[a,b]=key.split(">");
+    if(!placed.has(a)||!placed.has(b))return;
+    const pa=placed.get(a),pb=placed.get(b);
+    const sx=pa.x+pa.el.offsetWidth,sy=Math.round(portY(a,outs[a],key));
+    const tx=pb.x,ty=Math.round(portY(b,ins[b],key));
+    const d=routePath(sx,sy,tx,ty);
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.innerHTML='<path d="'+d+'" fill="none" stroke="#7fd7ef" stroke-width="1.4" '+
+      'marker-end="url(#arr)"/>'+
+      '<path class="hit" d="'+d+'" fill="none" stroke="transparent" stroke-width="14">'+
+      '<title>'+a+' → '+b+' (Klick löscht)</title></path>';
+    g.querySelector(".hit").addEventListener("click",()=>{userEdges.delete(key);drawEdges();});
+    edgeLayer.appendChild(g);
+  });
+}
+
+/* ---------- Prüfen ---------- */
+$("#btnCheck").addEventListener("click",()=>{
+  const lines=[];let structErr=0,valErr=0,valOk=0,empt=0;
+  const missing=[...task.edges].filter(e=>!userEdges.has(e));
+  const extra=[...userEdges].filter(e=>!task.edges.has(e));
+  const unplaced=task.nodes.filter(nd=>!placed.has(nd.id)).map(nd=>nd.id);
+  if(unplaced.length){lines.push('<span class="bad">Nicht platziert: '+unplaced.join(", ")+"</span>");structErr+=unplaced.length;}
+  missing.forEach(e=>{const[a,b]=e.split(">");
+    if(!unplaced.includes(a)&&!unplaced.includes(b)){
+      lines.push('<span class="bad">Fehlende Verbindung: '+a+" → "+b+"</span>");structErr++;}});
+  extra.forEach(e=>{const[a,b]=e.split(">");
+    lines.push('<span class="bad">Überflüssige Verbindung: '+a+" → "+b+"</span>");structErr++;});
+  if(!structErr&&!unplaced.length)
+    lines.push('<span class="good">Struktur korrekt.</span>');
+  placed.forEach((p,id)=>{
+    p.el.querySelectorAll("input[data-f]").forEach(inp=>{
+      const f=inp.dataset.f,want=task.sol[id][f];
+      inp.classList.remove("ok","err","miss");
+      if(inp.value===""){inp.classList.add("miss");empt++;return;}
+      if(+inp.value===want){inp.classList.add("ok");valOk++;}
+      else{inp.classList.add("err");valErr++;}
+    });
+  });
+  lines.push("");
+  lines.push("Werte: "+valOk+" richtig"+(valErr?', <span class="bad">'+valErr+" falsch</span>":"")+
+    (empt?', <span class="bad">'+empt+" leer</span>":""));
+  let dauerOk=false,pfadOk=false;
+  const d=$("#inDauer");d.classList.remove("ok","err","miss");
+  if(d.value.trim()!==""){
+    dauerOk=+d.value.trim()===task.dauer;
+    d.classList.add(dauerOk?"ok":"err");
+    lines.push("Projektdauer: "+(dauerOk?'<span class="good">richtig</span>':'<span class="bad">falsch</span>'));
+    if(!dauerOk)valErr++;
+  }else{d.classList.add("miss");empt++;
+    lines.push('<span class="bad">Projektdauer fehlt.</span>');}
+  const pf=$("#inPfad");pf.classList.remove("ok","err","miss");
+  if(pf.value.trim()!==""){
+    const norm=pf.value.toUpperCase().replace(/[^A-Z]/g,"").split("").join("-");
+    pfadOk=task.kritPaths.includes(norm);
+    pf.classList.add(pfadOk?"ok":"err");
+    lines.push("Kritischer Pfad: "+(pfadOk?'<span class="good">richtig</span>':
+      '<span class="bad">falsch oder unvollständig</span>')+
+      (task.kritPaths.length>1?" (mehrere Pfade möglich)":""));
+    if(!pfadOk)valErr++;
+  }else{pf.classList.add("miss");empt++;
+    lines.push('<span class="bad">Kritischer Pfad fehlt.</span>');}
+  if(stats&&!stats.done){
+    stats.checks++;stats.errors+=structErr+valErr;
+    const total=placed.size===task.nodes.length;
+    if(total&&!structErr&&!valErr&&!empt&&dauerOk&&pfadOk){
+      stats.done=true;
+      const ms=Date.now()-stats.start;
+      stats.doneMs=ms;
+      lines.push("");
+      lines.push('<span class="good">Aufgabe gelöst!</span>');
+      lines.push('<span class="good">Zeit: '+fmtTime(ms)+'</span>');
+      lines.push('<span class="good">Prüfvorgänge: '+stats.checks+'</span>');
+      lines.push('<span class="good">Fehler gesamt: '+stats.errors+'</span>');
+      saveHistEntry({code:stats.code,ms,checks:stats.checks,errors:stats.errors,
+        date:new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})+
+        " "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})});
+      $("#timer").textContent=fmtTime(ms);
+    }
+  }
+  const anyErr=structErr>0||valErr>0||empt>0;
+  const rp=$("#reportPanel");
+  rp.classList.remove("state-bad","state-good");
+  rp.classList.add(anyErr?"state-bad":"state-good");
+  $("#statLine").innerHTML=stats?
+    (stats.done?"Code: "+stats.code+"\n"
+     :"Code: "+stats.code+"\nVersuch: "+stats.checks+
+      "\nFehler gesamt: "+stats.errors+"\n"):"";
+  $("#report").innerHTML=lines.join("\n");
+  rp.hidden=false;
+  sendMyProg();
+  checkMatchEnd();
+});
+
+/* ---------- Lösung ---------- */
+$("#btnSolve").addEventListener("click",()=>{
+  if(!confirm("Lösung wirklich anzeigen? Die Aufgabe zählt dann nicht für den Verlauf."))return;
+  if(stats){stats.done=true;stats.doneMs=stats.doneMs||Date.now()-stats.start;}
+  task.nodes.forEach(nd=>{if(!placed.has(nd.id))placeNode(nd);});
+  task.edges.forEach(e=>userEdges.add(e));
+  [...userEdges].forEach(e=>{if(!task.edges.has(e))userEdges.delete(e);});
+  drawEdges();
+  placed.forEach((p,id)=>{
+    p.el.querySelectorAll("input[data-f]").forEach(inp=>{
+      inp.value=task.sol[id][inp.dataset.f];
+      inp.classList.remove("err","miss");inp.classList.add("ok");
+    });
+  });
+  $("#inDauer").value=task.dauer;
+  $("#inPfad").value=task.kritPaths[0].replace(/-/g,"");
+  $("#report").innerHTML="Lösung eingetragen. Projektdauer "+task.dauer+
+    " Tage, kritische(r) Pfad(e): "+task.kritPaths.join("  |  ");
+  const rp=$("#reportPanel");
+  rp.classList.remove("state-bad","state-good");
+  rp.hidden=false;
+});
+
+/* ---------- Multiplayer (Trystero, WebRTC) ---------- */
+const mp={room:null,sendCode:null,sendProg:null,peers:{},adoptNext:false,
+  score:{matches:0,wins:{}},scoredCode:null};
+$("#mpName").value=localStorage.getItem("nt_name")||"";
+$("#mpName").addEventListener("change",()=>{
+  localStorage.setItem("nt_name",$("#mpName").value);sendMyProg();
+});
+function myName(){return $("#mpName").value.trim()||"Anonym";}
+function selfProg(){
+  return{name:myName(),code:curCode,
+    ms:stats?(stats.done?stats.doneMs??0:Date.now()-stats.start):0,
+    checks:stats?stats.checks:0,errs:stats?stats.errors:0,
+    done:stats?stats.done:false};
+}
+function sendMyProg(){
+  if(!mp.sendProg)return;
+  const p=selfProg();
+  mp.sendProg(p);
+}
+function esc(s){return String(s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));}
+function renderPlayers(){
+  if(!mp.room){$("#players").innerHTML="";return;}
+  const rows=[Object.assign(selfProg(),{self:true})];
+  Object.values(mp.peers).forEach(p=>rows.push(p));
+  rows.sort((a,b)=>(b.done?1:0)-(a.done?1:0)||(a.ms??0)-(b.ms??0));
+  $("#players").innerHTML=rows.map(p=>{
+    const w=mp.score.wins[p.name]||0;
+    return '<li'+(p.self?' class="self"':'')+'>'+
+      '<div class="prow"><span class="pn">'+esc(p.name||"?")+(p.self?" (du)":"")+"</span>"+
+      (w?'<span class="pw">★'+w+"</span>":"")+"</div>"+
+      '<div class="prow"><span>'+(p.checks||0)+" V · "+(p.errs||0)+" F</span>"+
+      '<span class="pd">'+(p.done?'<span class="good">fertig '+fmtTime(p.ms||0)+"</span>"
+        :fmtTime(p.ms||0))+"</span></div></li>";
+  }).join("");
+}
+function checkMatchEnd(){
+  if(!mp.room||!curCode||mp.scoredCode===curCode)return;
+  const all=[selfProg(),...Object.values(mp.peers).filter(p=>p.code===curCode)];
+  if(all.length<2||!all.every(p=>p.done))return;
+  mp.scoredCode=curCode;
+  mp.score.matches++;
+  const win=all.reduce((a,b)=>(a.ms<=b.ms?a:b));
+  mp.score.wins[win.name]=(mp.score.wins[win.name]||0)+1;
+  $("#mpStatus").innerHTML='<span class="good">MATCH BEENDET · Sieger: '+esc(win.name)+
+    " ("+fmtTime(win.ms)+") · Match "+mp.score.matches+"</span>";
+  renderPlayers();
+}
+function setRoomStatus(){
+  if(!mp.room)return;
+  if(mp.scoredCode&&mp.scoredCode===curCode)return; // Match-Ergebnis nicht ueberschreiben
+  let relays="";
+  if(mp.getRelaySockets){
+    try{
+      const socks=Object.values(mp.getRelaySockets());
+      relays=" · Relays "+socks.filter(w=>w&&w.readyState===1).length+"/"+socks.length;
+    }catch(e){}
+  }
+  const n=Object.keys(mp.peers).length+1;
+  $("#mpStatus").textContent=(n>1?"Verbunden · "+n+" Teilnehmer"
+    :'Raum "'+mp.roomName+'" offen, warte auf Mitspieler')+relays;
+}
+$("#btnRoom").addEventListener("click",async()=>{
+  const rn=$("#mpRoom").value.trim();
+  if(mp.room){mp.room.leave();mp.room=null;mp.peers={};
+    mp.score={matches:0,wins:{}};mp.scoredCode=null;
+    renderPlayers();
+    $("#btnRoom").textContent="Beitreten";
+    $("#mpStatus").textContent="Raum verlassen.";
+    mp.sendCode=mp.sendProg=null;return;}
+  if(!rn){alert("Bitte Raumnamen eingeben.");return;}
+  $("#mpPanel").hidden=false;
+  $("#mpStatus").textContent="Verbinde …";
+  try{
+    const t=await import("https://esm.sh/trystero@0.21.5/nostr");
+    mp.getRelaySockets=t.getRelaySockets||null;
+    mp.room=t.joinRoom({appId:"pufferzone-v1",
+      rtcConfig:{iceServers:[{urls:"stun:stun.l.google.com:19302"}]}},rn);
+    mp.roomName=rn;
+  }catch(err){
+    $("#mpStatus").textContent="Verbindung fehlgeschlagen: "+err.message+
+      " – falls die Datei per file:// geöffnet ist, hilft ein lokaler Webserver (python3 -m http.server).";
+    return;
+  }
+  mp.adoptNext=!task;
+  const[sendCode,onCode]=mp.room.makeAction("code");
+  const[sendProg,onProg]=mp.room.makeAction("prog");
+  mp.sendCode=sendCode;mp.sendProg=sendProg;
+  onCode((d,peer)=>{
+    if(!d||!d.code)return;
+    if(d.isNew||(mp.adoptNext&&d.code!==curCode)){
+      mp.adoptNext=false;
+      if(d.code!==curCode)loadTask(d.code,false);
+    }
+  });
+  onProg((p,peer)=>{mp.peers[peer]=p;renderPlayers();setRoomStatus();checkMatchEnd();});
+  mp.room.onPeerJoin(peer=>{
+    if(curCode)mp.sendCode({code:curCode,isNew:false},peer);
+    sendMyProg();setRoomStatus();
+  });
+  mp.room.onPeerLeave(peer=>{delete mp.peers[peer];renderPlayers();setRoomStatus();});
+  $("#btnRoom").textContent="Verlassen";
+  $("#mpStatus").textContent='Raum "'+esc(rn)+'" offen, warte auf Mitspieler …';
+  renderPlayers();
+});
+setInterval(()=>{
+  if(mp.sendProg&&stats&&!stats.done)sendMyProg();
+  if(mp.room)setRoomStatus();
+},5000);
+</script>
+</body>
+</html>
