@@ -6,6 +6,8 @@ Eine einzelne HTML-Datei. Kein Build, kein Server, keine Installation. Öffnen, 
 
 [Zur Anwendung](https://lokthok.github.io/pufferzone/pufferzone.html)
 
+<br>
+
 <a href="docs/screenshot.png"><img src="docs/screenshot.png" alt="PUFFERZONE: gelöste Aufgabe mit goldenem kritischen Pfad" width="850"></a>
 
 *Klick auf das Bild öffnet die volle Auflösung.*
