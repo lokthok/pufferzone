@@ -10,6 +10,8 @@ Eine einzelne HTML-Datei. Kein Build, kein Server, keine Installation. Öffnen, 
 
 PUFFERZONE generiert Netzplan-Aufgaben (Vorgangsknotennetze mit Vorwärts- und Rückwärtsrechnung, Puffern und kritischem Pfad), die du direkt im Browser löst: Knoten platzieren, Verbindungen ziehen, Werte eintragen, prüfen lassen. Netzplantechnik ist Stoff der AP1, und die ist berufsübergreifend identisch: Fachinformatiker aller Fachrichtungen (Anwendungsentwicklung, Systemintegration, Daten- und Prozessanalyse, Digitale Vernetzung) ebenso wie Kaufleute für IT-System-Management und Digitalisierungsmanagement schreiben dieselbe Prüfung. Die Knoten entsprechen dem in der IHK-Prüfung üblichen Format (FAZ/FEZ oben, Nr und Bezeichnung, Dauer/GP/FP, SAZ/SEZ unten).
 
+[Zur Anwendung](https://lokthok.github.io/pufferzone/pufferzone.html)
+
 ## Features
 
 **Aufgabengenerator mit Seeds.** Jede Aufgabe hat einen 5-stelligen Code (z. B. `M7KQF`). Erster Buchstabe = Schwierigkeit (L/M/S mit 6/8/10 Vorgängen), gleicher Code erzeugt auf jedem Gerät exakt dieselbe Aufgabe. Codes lassen sich per Zuruf teilen und funktionieren komplett offline.
